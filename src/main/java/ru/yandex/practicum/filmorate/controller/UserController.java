@@ -62,12 +62,15 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED).body(user);
 
         } catch (ValidationException e) {
-            log.warn("Ошибка при создании пользователя: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            log.warn("Бизнес-ошибка при создании пользователя: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         } catch (Exception e) {
             log.error("Неожиданная ошибка при создании пользователя: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Внутренняя ошибка сервера");
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Внутренняя ошибка сервера");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -85,8 +88,9 @@ public class UserController {
 
         if (user.getId() == null || !users.containsKey(user.getId())) {
             log.warn("Пользователь с ID {} не найден", user.getId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Пользователь с id=" + user.getId() + " не найден");
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Пользователь с id=" + user.getId() + " не найден");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
 
         try {
@@ -102,11 +106,14 @@ public class UserController {
 
         } catch (ValidationException e) {
             log.warn("Ошибка при обновлении пользователя: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         } catch (Exception e) {
             log.error("Неожиданная ошибка при обновлении пользователя: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Внутренняя ошибка сервера");
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Внутренняя ошибка сервера");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
