@@ -50,11 +50,9 @@ public class UserController {
 
         try {
             validateUser(user);
-
             if (user.getName() == null || user.getName().trim().isEmpty()) {
                 user.setName(user.getLogin());
             }
-
             user.setId(nextId++);
             users.put(user.getId(), user);
 
