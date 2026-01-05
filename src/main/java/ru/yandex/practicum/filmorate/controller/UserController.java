@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
-
+import ru.yandex.practicum.filmorate.model.User;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,13 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 @RestController
 @RequestMapping("/users")
@@ -31,7 +29,7 @@ public class UserController {
         log.info("GET /users - получение всех пользователей");
         List<User> userList = new ArrayList<>(users.values());
         userList.forEach(user -> {
-            if (user.getName() == null || user.getName().isBlank()) {
+            if (user.getName() == null || user.getName().trim().isEmpty()) {
                 user.setName(user.getLogin());
             }
         });
@@ -53,7 +51,7 @@ public class UserController {
         try {
             validateUser(user);
 
-            if (user.getName() == null || user.getName().isBlank()) {
+            if (user.getName() == null || user.getName().trim().isEmpty()) {
                 user.setName(user.getLogin());
             }
 
@@ -66,6 +64,10 @@ public class UserController {
         } catch (ValidationException e) {
             log.warn("Ошибка при создании пользователя: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при создании пользователя: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Внутренняя ошибка сервера");
         }
     }
 
@@ -83,13 +85,14 @@ public class UserController {
 
         if (user.getId() == null || !users.containsKey(user.getId())) {
             log.warn("Пользователь с ID {} не найден", user.getId());
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Пользователь с id=" + user.getId() + " не найден");
         }
 
         try {
             validateUser(user);
 
-            if (user.getName() == null || user.getName().isBlank()) {
+            if (user.getName() == null || user.getName().trim().isEmpty()) {
                 user.setName(user.getLogin());
             }
 
@@ -100,18 +103,20 @@ public class UserController {
         } catch (ValidationException e) {
             log.warn("Ошибка при обновлении пользователя: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при обновлении пользователя: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Внутренняя ошибка сервера");
         }
     }
 
     private void validateUser(User user) {
-        // Проверка уникальности email
         boolean emailExists = users.values().stream()
                 .anyMatch(u -> u.getEmail().equals(user.getEmail()) && !u.getId().equals(user.getId()));
         if (emailExists) {
             throw new ValidationException("Пользователь с таким email уже существует");
         }
 
-        // Проверка уникальности логина
         boolean loginExists = users.values().stream()
                 .anyMatch(u -> u.getLogin().equals(user.getLogin()) && !u.getId().equals(user.getId()));
         if (loginExists) {

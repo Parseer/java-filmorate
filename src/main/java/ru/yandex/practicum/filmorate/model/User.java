@@ -1,10 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
 import java.time.LocalDate;
 import jakarta.validation.constraints.*;
 
-@Data
 public class User {
     private Integer id;
 
@@ -19,10 +17,49 @@ public class User {
     private String name;
 
     @NotNull(message = "Дата рождения обязательна")
-    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    @Past(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
-    /*public String getDisplayName() {
-        return (name == null || name.isBlank()) ? login : name;
-    }*/
+    public User() {
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public void setLogin(String login) {
+        this.login = login;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
+    }
 }

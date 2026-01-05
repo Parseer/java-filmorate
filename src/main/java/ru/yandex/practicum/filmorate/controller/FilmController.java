@@ -1,10 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import org.slf4j.LoggerFactory;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -27,7 +27,7 @@ public class FilmController {
 
     @GetMapping
     public List<Film> getAllFilms() {
-        log.info("GET /films - получение всех фильмов");
+        log.info("GET /films - получение списка всех фильмов");
         return new ArrayList<>(films.values());
     }
 
@@ -45,22 +45,25 @@ public class FilmController {
 
         try {
             validateFilm(film);
-
             film.setId(nextId++);
             films.put(film.getId(), film);
 
-            log.info("Фильм '{}' создан с ID {}", film.getName(), film.getId());
+            log.info("Фильм успешно создан: {} (ID: {})", film.getName(), film.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(film);
 
         } catch (ValidationException e) {
-            log.warn("Ошибка при создании фильма: {}", e.getMessage());
+            log.warn("Бизнес-ошибка при создании фильма: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при создании фильма: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Внутренняя ошибка сервера");
         }
     }
 
     @PutMapping
     public ResponseEntity<?> updateFilm(@Valid @RequestBody Film film, BindingResult bindingResult) {
-        log.info("PUT /films - обновление фильма ID {}", film.getId());
+        log.info("PUT /films - обновление фильма ID: {}", film.getId());
 
         if (bindingResult.hasErrors()) {
             log.warn("Ошибка валидации при обновлении фильма: {}", bindingResult.getFieldErrors());
@@ -72,19 +75,25 @@ public class FilmController {
 
         if (film.getId() == null || !films.containsKey(film.getId())) {
             log.warn("Фильм с ID {} не найден", film.getId());
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Фильм с id=" + film.getId() + " не найден");
         }
 
         try {
             validateFilm(film);
 
             films.put(film.getId(), film);
-            log.info("Фильм ID {} обновлен", film.getId());
+
+            log.info("Фильм ID {} успешно обновлен", film.getId());
             return ResponseEntity.ok(film);
 
         } catch (ValidationException e) {
-            log.warn("Ошибка при обновлении фильма: {}", e.getMessage());
+            log.warn("Бизнес-ошибка при обновлении фильма: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при обновлении фильма: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Внутренняя ошибка сервера");
         }
     }
 
@@ -92,6 +101,10 @@ public class FilmController {
         LocalDate minDate = LocalDate.of(1895, 12, 28);
         if (film.getReleaseDate().isBefore(minDate)) {
             throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года");
+        }
+
+        if (film.getDuration() > 300) {
+            throw new ValidationException("Продолжительность фильма не может превышать 300 минут");
         }
     }
 }
