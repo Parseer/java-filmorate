@@ -99,7 +99,6 @@ public class UserController {
             if (user.getName() == null || user.getName().trim().isEmpty()) {
                 user.setName(user.getLogin());
             }
-
             users.put(user.getId(), user);
             log.info("Пользователь ID {} обновлен", user.getId());
             return ResponseEntity.ok(user);
