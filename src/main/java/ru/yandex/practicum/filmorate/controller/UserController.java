@@ -100,7 +100,7 @@ public class UserController {
             }
             users.put(user.getId(), user);
             log.info("Пользователь ID {} обновлен", user.getId());
-            
+
             return ResponseEntity.ok(user);
 
         } catch (ValidationException e) {
