@@ -19,13 +19,13 @@ public class Film {
     private String description;
 
     @NotNull(message = "Дата релиза обязательна")
-    @PastOrPresent(message = "Дата релиза не может быть в будущем")
+    //@PastOrPresent(message = "Дата релиза не может быть в будущем")
     private LocalDate releaseDate;
 
-    public boolean isReleaseDateValid() {
+    /*public boolean isReleaseDateValid() {
         LocalDate minDate = LocalDate.of(1895, 12, 28);
         return releaseDate != null && !releaseDate.isBefore(minDate);
-    }
+    }*/
 
     @Positive(message = "Продолжительность фильма должна быть положительным числом")
     private Integer duration;
