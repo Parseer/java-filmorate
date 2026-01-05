@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.*; // доп пакет
 import java.time.LocalDate;
+import jakarta.validation.constraints.*; // доп пакет
 
 /**
  * Film.
