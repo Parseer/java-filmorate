@@ -43,7 +43,6 @@ class UserValidationTest {
         user.setLogin("user123");
         user.setName("Иван Иванов");
         user.setBirthday(LocalDate.of(1990, 5, 15));
-
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         assertFalse(violations.isEmpty(), "email должен вызывать ошибку");
 
