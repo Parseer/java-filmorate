@@ -8,32 +8,44 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
+    private final UserStorage userStorage;
+    private final UserService userService;
 
-    private final Map<Integer, User> users = new HashMap<>();
-    private int nextId = 1;
+
+    public UserController(UserStorage userStorage, UserService userService) {
+        this.userStorage = userStorage;
+        this.userService = userService;
+    }
 
     @GetMapping
     public List<User> getAllUsers() {
         log.info("GET /users - получение всех пользователей");
-        List<User> userList = new ArrayList<>(users.values());
-        userList.forEach(user -> {
-            if (user.getName() == null || user.getName().trim().isEmpty()) {
-                user.setName(user.getLogin());
-            }
-        });
-        return userList;
+        return userStorage.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Integer id) {
+        log.info("GET /users/{} - получение пользователя по ID", id);
+
+        User user = userStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
+
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping
@@ -49,16 +61,8 @@ public class UserController {
         }
 
         try {
-            validateUser(user);
-            if (user.getName() == null || user.getName().trim().isEmpty()) {
-                user.setName(user.getLogin());
-            }
-            user.setId(nextId++);
-            users.put(user.getId(), user);
-
-            log.info("Пользователь '{}' создан с ID {}", user.getLogin(), user.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(user);
-
+            User createdUser = userStorage.create(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (ValidationException e) {
             log.warn("Бизнес-ошибка при создании пользователя: {}", e.getMessage());
             Map<String, String> error = new HashMap<>();
@@ -84,23 +88,18 @@ public class UserController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        if (user.getId() == null || !users.containsKey(user.getId())) {
-            log.warn("Пользователь с ID {} не найден", user.getId());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Пользователь с id=" + user.getId() + " не найден");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
-
         try {
-            validateUser(user);
-            if (user.getName() == null || user.getName().trim().isEmpty()) {
-                user.setName(user.getLogin());
+            Optional<User> updatedUser = userStorage.update(user);
+
+            if (updatedUser.isPresent()) {
+                log.info("Пользователь ID {} обновлен", user.getId());
+                return ResponseEntity.ok(updatedUser.get());
+            } else {
+                log.warn("Пользователь с ID {} не найден", user.getId());
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Пользователь с id=" + user.getId() + " не найден");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
             }
-            users.put(user.getId(), user);
-            log.info("Пользователь ID {} обновлен", user.getId());
-
-            return ResponseEntity.ok(user);
-
         } catch (ValidationException e) {
             log.warn("Ошибка при обновлении пользователя: {}", e.getMessage());
             Map<String, String> error = new HashMap<>();
@@ -114,17 +113,31 @@ public class UserController {
         }
     }
 
-    private void validateUser(User user) {
-        boolean emailExists = users.values().stream()
-                .anyMatch(u -> u.getEmail().equals(user.getEmail()) && !u.getId().equals(user.getId()));
-        if (emailExists) {
-            throw new ValidationException("Пользователь с таким email уже существует");
-        }
+    @PutMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<?> addFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        log.info("PUT /users/{}/friends/{} - добавление в друзья", id, friendId);
 
-        boolean loginExists = users.values().stream()
-                .anyMatch(u -> u.getLogin().equals(user.getLogin()) && !u.getId().equals(user.getId()));
-        if (loginExists) {
-            throw new ValidationException("Пользователь с таким логином уже существует");
-        }
+        userService.addFriend(id, friendId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<?> removeFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        log.info("DELETE /users/{}/friends/{} - удаление из друзей", id, friendId);
+
+        userService.removeFriend(id, friendId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getUserFriends(@PathVariable Integer id) {
+        log.info("GET /users/{}/friends - получение друзей пользователя", id);
+        return userService.getUserFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable Integer id, @PathVariable Integer otherId) {
+        log.info("GET /users/{}/friends/common/{} - получение общих друзей", id, otherId);
+        return userService.getCommonFriends(id, otherId);
     }
 }

@@ -1,11 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
 import java.time.LocalDate;
-import jakarta.validation.constraints.*; // доп пакет
 
-/**
- * Film.
- */
+import jakarta.validation.constraints.*;
 
 public class Film {
     private Integer id;
